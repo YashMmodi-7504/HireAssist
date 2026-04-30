@@ -15,12 +15,21 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const credentials = [
-    { role: "Student", email: "student@gmail.com", password: "1234" },
-    { role: "Trainer", email: "trainer@gmail.com", password: "1234" },
-    { role: "Admin", email: "admin@gmail.com", password: "1234" },
-    { role: "Director", email: "director@gmail.com", password: "1234" },
+  // Frontend-only demo auth — the deployed build has no backend.
+  // Keep this list as the single source of truth for both the credential
+  // check and the demo-fill helper rendered below the form.
+  const DEMO_ACCOUNTS = [
+    { role: "student",  label: "Student",  name: "Yash Modi",       email: "student@gmail.com",  password: "1234" },
+    { role: "trainer",  label: "Trainer",  name: "Praful Bhoyar",   email: "trainer@gmail.com",  password: "1234" },
+    { role: "admin",    label: "Admin",    name: "Aanya Verma",     email: "admin@gmail.com",    password: "1234" },
+    { role: "director", label: "Director", name: "Vikram Joshi",    email: "director@gmail.com", password: "1234" },
   ];
+
+  const credentials = DEMO_ACCOUNTS.map((a) => ({
+    role: a.label,
+    email: a.email,
+    password: a.password,
+  }));
 
   // If already authed, send them to their dashboard (or honor the original
   // route the user tried to visit before being kicked to /).
@@ -44,35 +53,37 @@ const Login = () => {
     }
 
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
-      const data = await res.json().catch(() => ({}));
+    // Brief delay so the spinner reads as "signing in" rather than a flash
+    await new Promise((r) => setTimeout(r, 250));
 
-      if (!res.ok) {
-        throw new Error(data.error || `Login failed (${res.status})`);
-      }
+    const match = DEMO_ACCOUNTS.find(
+      (a) => a.email === email.trim().toLowerCase() && a.password === password
+    );
 
-      console.log("Logged in role:", data.user?.role);
-      login(data.token, data.user);
-      toast({
-        title: `Welcome, ${data.user?.name || "back"}`,
-        message: `Signed in as ${data.user?.role}.`,
-        variant: "success",
-      });
-      navigate(dashboardPathForRole(data.user?.role), { replace: true });
-    } catch (err) {
+    if (!match) {
       toast({
         title: "Login failed",
-        message: err.message || "Couldn't reach the server. Try again.",
+        message: "Invalid email or password",
         variant: "error",
       });
-    } finally {
       setSubmitting(false);
+      return;
     }
+
+    const demoUser = {
+      id: `demo-${match.role}`,
+      name: match.name,
+      email: match.email,
+      role: match.role,
+    };
+    login(`demo-token-${match.role}`, demoUser);
+    toast({
+      title: `Welcome, ${demoUser.name}`,
+      message: `Signed in as ${match.label}.`,
+      variant: "success",
+    });
+    navigate(dashboardPathForRole(match.role), { replace: true });
+    setSubmitting(false);
   };
 
   const handleDemoFill = (cred) => {
