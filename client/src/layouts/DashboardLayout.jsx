@@ -3,7 +3,6 @@ import { Outlet, useLocation } from "react-router-dom";
 import { FaBars } from "react-icons/fa";
 import LightPurpleSidebar from "../components/LightPurpleSidebar";
 import HeaderWithNotifications from "../components/HeaderWithNotifications";
-import Chatbot from "../components/Chatbot/Chatbot";
 import { useAuth } from "../auth/AuthContext";
 
 const DashboardLayout = ({ onLogout = () => {} }) => {
@@ -14,7 +13,9 @@ const DashboardLayout = ({ onLogout = () => {} }) => {
 
   useEffect(() => {
     const path = location.pathname;
-    if (path.includes("/assessment")) {
+    if (path.includes("/ai-chat") || path.endsWith("/ai")) {
+      setActiveMenu("ai-chat");
+    } else if (path.includes("/assessment")) {
       setActiveMenu("assessment");
     } else if (path.includes("/attendance")) {
       setActiveMenu("attendance");
@@ -82,9 +83,6 @@ const DashboardLayout = ({ onLogout = () => {} }) => {
           <Outlet context={{ user }} />
         </main>
       </div>
-
-      {/* Floating AI tutor (mounts once for the whole dashboard) */}
-      <Chatbot />
     </div>
   );
 };

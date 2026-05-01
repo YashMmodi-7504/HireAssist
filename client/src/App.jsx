@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ToastProvider } from "./components/ui/Toaster";
 import { ConfirmProvider } from "./components/ui/ConfirmDialog";
 import { AuthProvider } from "./auth/AuthContext";
@@ -16,6 +16,7 @@ import CertificatePage from "./pages/student/CertificatePage";
 import AlumniPage from "./pages/student/AlumniPage";
 import FeedbackPage from "./pages/student/FeedbackPage";
 import TicketPage from "./pages/student/TicketPage";
+import AIChat from "./pages/student/AIChat";
 import CourseView from "./pages/course/CourseView";
 import ModuleViewer from "./pages/course/ModuleViewer";
 
@@ -35,6 +36,9 @@ import ModuleTrackerPage from "./pages/trainer/ModuleTrackerPage";
 import ApproveCourseAccessPage from "./pages/trainer/ApproveCourseAccessPage";
 import CapstoneProjectPage from "./pages/trainer/CapstoneProjectPage";
 import CoursePage from "./pages/trainer/CoursePage";
+import Courses from "./pages/trainer/Courses";
+import ViewCourse from "./pages/trainer/ViewCourse";
+import ModuleDetail from "./pages/trainer/ModuleDetail";
 import AssessmentManagementPage from "./pages/trainer/AssessmentManagementPage";
 import ComingSoonPage from "./pages/trainer/ComingSoonPage";
 
@@ -85,6 +89,8 @@ function App() {
           <Route path="feedback" element={<FeedbackPage />} />
           <Route path="ticket" element={<TicketPage />} />
           <Route path="ticket/queries" element={<TicketPage />} />
+          <Route path="ai-chat" element={<AIChat />} />
+          <Route path="ai" element={<AIChat />} />
           <Route path="module/:moduleId" element={<ModuleViewer />} />
         </Route>
 
@@ -109,7 +115,10 @@ function App() {
           <Route path="capstone" element={<CapstoneProjectPage />} />
           <Route path="attendance" element={<TrainerAttendancePage />} />
           <Route path="interview" element={<InterviewPage />} />
-          <Route path="course" element={<CoursePage />} />
+          <Route path="course" element={<Navigate to="/trainer/courses" replace />} />
+          <Route path="courses" element={<Courses />} />
+          <Route path="course/:courseId" element={<ViewCourse />} />
+          <Route path="course/:courseId/module/:moduleId" element={<ModuleDetail />} />
           <Route path="assessment" element={<AssessmentManagementPage />} />
           <Route path="sdp" element={<SdpReportPage />} />
           <Route path="placement" element={<PlacementReadinessPage />} />

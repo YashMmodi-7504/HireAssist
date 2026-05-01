@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth, dashboardPathForRole } from "../auth/AuthContext";
 import { useToast } from "../components/ui/Toaster";
+import BrandMark from "../components/branding/BrandMark";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -93,20 +94,17 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* 🔷 TOP NAVBAR */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      {/* 🔷 TOP NAVBAR — glass effect */}
+      <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-xl border-b border-white/60 shadow-[0_4px_20px_-8px_rgba(124,92,255,0.15)]">
         <div className="flex justify-between items-center px-16 py-4">
           {/* LEFT - Logo + Brand */}
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="HireAssist Logo"
-              className="w-14 h-14 object-contain hover:scale-110 transition duration-200 cursor-pointer"
-            />
-            <div className="text-xl font-bold text-purple-600 tracking-wide">
-              HireAssist
-            </div>
-          </div>
+          <BrandMark
+            size="xl"
+            theme="dark"
+            withIcon
+            tagline="Edtech Platform"
+            onClick={() => {}}
+          />
 
           {/* RIGHT - Menu */}
           <div className="flex items-center gap-6">
@@ -126,8 +124,31 @@ const Login = () => {
         </div>
       </div>
 
-      {/* 🔷 HERO SECTION */}
-      <div className="flex-1 bg-gradient-to-br from-purple-100 via-purple-200 to-purple-300 flex items-stretch justify-center px-20 py-16">
+      {/* 🔷 HERO SECTION — layered radial + linear gradients for depth */}
+      <div
+        className="relative flex-1 flex items-stretch justify-center px-20 py-16 overflow-hidden"
+        style={{
+          backgroundImage: [
+            // Top-left soft white-violet glow (warm highlight)
+            "radial-gradient(ellipse 80% 60% at 18% 12%, rgba(255,255,255,0.35), transparent 60%)",
+            // Bottom-right cool blue-violet bloom (depth)
+            "radial-gradient(ellipse 60% 50% at 92% 88%, rgba(94,53,229,0.55), transparent 70%)",
+            // Base diagonal brand gradient
+            "linear-gradient(135deg, #7C5CFF 0%, #9273FF 45%, #B39DFF 100%)",
+          ].join(", "),
+        }}
+      >
+        {/* Decorative blurred orbs for premium depth */}
+        <div
+          className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-40 blur-3xl"
+          style={{ background: "radial-gradient(circle, #C4B5FD 0%, transparent 70%)" }}
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute -bottom-32 -right-20 w-[28rem] h-[28rem] rounded-full opacity-30 blur-3xl"
+          style={{ background: "radial-gradient(circle, #6D28D9 0%, transparent 70%)" }}
+          aria-hidden="true"
+        />
         <div className="flex items-stretch justify-center gap-24 max-w-full">
           {/* LEFT SECTION */}
           <div className="flex flex-col gap-6">
@@ -206,8 +227,21 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 hover:scale-[1.02] active:scale-[0.98] mt-2 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="group relative w-full inline-flex items-center justify-center gap-2 text-white font-semibold py-3 px-4 rounded-lg mt-2 overflow-hidden transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-12px_rgba(124,92,255,0.65)] active:translate-y-0 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none shadow-[0_8px_22px_-8px_rgba(124,92,255,0.55)]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(135deg, #7C5CFF 0%, #8B6BFF 50%, #6D44E8 100%)",
+                  }}
                 >
+                  {/* Sheen overlay on hover */}
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 60%)",
+                    }}
+                  />
                   {submitting ? (
                     <>
                       <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />

@@ -22,7 +22,10 @@ const resolveActiveMenu = (path) => {
   if (path.startsWith("/trainer/assessment")) return "assessment";
   if (path.startsWith("/trainer/sdp")) return "sdp";
   if (path.startsWith("/trainer/placement")) return "placement";
-  if (path.startsWith("/trainer/course")) return "course";
+  // Course catalog: /trainer/courses (list), /trainer/course/:id (detail),
+  // /trainer/course/:id/module/:mid (module). Bare /trainer/course redirects
+  // to /trainer/courses, so all of these resolve to the same sidebar entry.
+  if (path.startsWith("/trainer/courses") || path.startsWith("/trainer/course")) return "courses";
   return "dashboard";
 };
 

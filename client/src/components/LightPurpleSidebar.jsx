@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import BrandMark from "./branding/BrandMark";
 import {
   FiGrid,
   FiClipboard,
@@ -15,6 +16,7 @@ import {
   FiPlusCircle,
   FiInbox,
   FiChevronDown,
+  FiCpu,
 } from "react-icons/fi";
 
 const NAV = [
@@ -22,6 +24,7 @@ const NAV = [
   { id: "assessment", label: "Assessment", icon: FiClipboard, route: "/student/assessment" },
   { id: "attendance", label: "View Attendance", icon: FiCalendar, route: "/student/attendance" },
   { id: "materials", label: "Study Material", icon: FiBookOpen, route: "/student/material" },
+  { id: "ai-chat", label: "AI Assistant", icon: FiCpu, route: "/student/ai" },
   { id: "placement", label: "Placement Form", icon: FiBriefcase, route: "/student/placement" },
   { id: "jobs", label: "Apply Jobs", icon: FiFileText, route: "/student/jobs" },
   { id: "certificate", label: "Download Certificate", icon: FiAward, route: "/student/certificate" },
@@ -143,26 +146,8 @@ const LightPurpleSidebar = ({ activeMenu, setActiveMenu }) => {
   return (
     <div className="w-full h-screen bg-gradient-to-b from-[#6D28D9] to-[#4C1D95] flex flex-col overflow-y-auto backdrop-blur-md">
       {/* Logo + Brand */}
-      <div className="px-4 py-3 flex items-center gap-3 border-b border-white/10 flex-shrink-0">
-        <img
-          src="/logo.png"
-          alt="HireAssist"
-          className="w-8 h-8 object-contain rounded-lg flex-shrink-0"
-          onError={(e) => {
-            // Fall back to a gradient initial tile if the asset is missing
-            const fallback = document.createElement("div");
-            fallback.className =
-              "w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-sm flex-shrink-0";
-            fallback.textContent = "H";
-            e.target.replaceWith(fallback);
-          }}
-        />
-        <div className="min-w-0">
-          <h1 className="text-base font-semibold text-white leading-tight">
-            HireAssist
-          </h1>
-          <p className="text-[11px] text-white/70 mt-0.5">Student Console</p>
-        </div>
+      <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
+        <BrandMark size="md" theme="light" withIcon tagline="Student Console" />
       </div>
 
       {/* Navigation */}

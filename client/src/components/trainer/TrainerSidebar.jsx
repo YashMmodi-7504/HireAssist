@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
+import BrandMark from "../branding/BrandMark";
 import {
   FiGrid,
   FiUsers,
@@ -16,7 +17,6 @@ import {
   FiCode,
   FiCalendar,
   FiVideo,
-  FiBook,
   FiClipboard,
   FiFileText,
   FiBriefcase,
@@ -52,7 +52,7 @@ const NAV = [
   { id: "capstone", label: "Capstone Project", icon: FiCode, route: "/trainer/capstone" },
   { id: "attendance", label: "Attendance", icon: FiCalendar, route: "/trainer/attendance" },
   { id: "interview", label: "Schedule Interview", icon: FiVideo, route: "/trainer/interview" },
-  { id: "course", label: "Course", icon: FiBook, route: "/trainer/course" },
+  { id: "courses", label: "Courses", icon: FiBookOpen, route: "/trainer/courses" },
   { id: "assessment", label: "Assessment", icon: FiClipboard, route: "/trainer/assessment" },
   { id: "sdp", label: "SDP Report", icon: FiFileText, route: "/trainer/sdp" },
   { id: "placement", label: "Placement Readiness", icon: FiBriefcase, route: "/trainer/placement" },
@@ -161,25 +161,8 @@ const TrainerSidebar = ({ activeMenu, setActiveMenu }) => {
   return (
     <div className="w-full h-screen bg-gradient-to-b from-[#6D28D9] to-[#4C1D95] flex flex-col overflow-y-auto backdrop-blur-md">
       {/* Logo + Brand */}
-      <div className="px-4 py-3 flex items-center gap-3 border-b border-white/10 flex-shrink-0">
-        <img
-          src="/logo.png"
-          alt="HireAssist"
-          className="w-8 h-8 object-contain rounded-lg flex-shrink-0"
-          onError={(e) => {
-            const fallback = document.createElement("div");
-            fallback.className =
-              "w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-sm flex-shrink-0";
-            fallback.textContent = "H";
-            e.target.replaceWith(fallback);
-          }}
-        />
-        <div className="min-w-0">
-          <h1 className="text-base font-semibold text-white leading-tight">
-            HireAssist
-          </h1>
-          <p className="text-[11px] text-white/70 mt-0.5">Trainer Console</p>
-        </div>
+      <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
+        <BrandMark size="md" theme="light" withIcon tagline="Trainer Console" />
       </div>
 
       {/* Navigation */}

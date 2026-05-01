@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
+import BrandMark from "../branding/BrandMark";
 import {
   FiGrid,
   FiUsers,
@@ -180,23 +181,8 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
   return (
     <div className="w-full h-screen bg-gradient-to-b from-[#7C3AED] via-[#5B21B6] to-[#4C1D95] flex flex-col overflow-y-auto backdrop-blur-md">
       {/* Logo + Brand */}
-      <div className="px-4 py-3 flex items-center gap-3 border-b border-white/10 flex-shrink-0">
-        <img
-          src="/logo.png"
-          alt="HireAssist"
-          className="w-8 h-8 object-contain rounded-lg flex-shrink-0"
-          onError={(e) => {
-            const fallback = document.createElement("div");
-            fallback.className =
-              "w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-sm flex-shrink-0";
-            fallback.textContent = "H";
-            e.target.replaceWith(fallback);
-          }}
-        />
-        <div className="min-w-0">
-          <h1 className="text-base font-semibold text-white leading-tight">HireAssist</h1>
-          <p className="text-[11px] text-white/70 mt-0.5">Admin Console</p>
-        </div>
+      <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
+        <BrandMark size="md" theme="light" withIcon tagline="Admin Console" />
       </div>
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
