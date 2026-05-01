@@ -66,6 +66,20 @@ const CALLOUT_TYPES = {
     border: "border-emerald-200",
     text: "text-emerald-900",
   },
+  "real-world use": {
+    emoji: "🌍",
+    label: "Real-world use",
+    bg: "bg-gradient-to-r from-rose-50 to-pink-50",
+    border: "border-rose-200",
+    text: "text-rose-900",
+  },
+  "real world use": {
+    emoji: "🌍",
+    label: "Real-world use",
+    bg: "bg-gradient-to-r from-rose-50 to-pink-50",
+    border: "border-rose-200",
+    text: "text-rose-900",
+  },
 };
 
 const childrenToText = (children) =>
