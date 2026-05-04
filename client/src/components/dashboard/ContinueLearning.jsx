@@ -25,9 +25,11 @@ const ContinueLearning = ({ courses = [], onContinue, onViewAll }) => {
           </p>
         )}
         {courses.map((c) => (
-          <div
+          <button
+            type="button"
             key={c.title}
-            className="border border-gray-100 rounded-xl p-5 hover:border-purple-200 hover:shadow-[0_8px_24px_-8px_rgba(124,58,237,0.18)] hover:-translate-y-0.5 transition-all duration-200"
+            onClick={() => onContinue?.(c)}
+            className="group text-left border border-gray-100 rounded-xl p-5 bg-white hover:border-purple-200 hover:shadow-[0_8px_24px_-8px_rgba(124,58,237,0.18)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
           >
             <div className="flex items-start justify-between gap-3 mb-2">
               <p className="text-sm font-semibold text-gray-900 truncate">{c.title}</p>
@@ -38,19 +40,15 @@ const ContinueLearning = ({ courses = [], onContinue, onViewAll }) => {
             <p className="text-xs text-gray-500 mb-4">Next: {c.nextTopic}</p>
             <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-4">
               <div
-                className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                className="h-full bg-purple-500 rounded-full transition-[width] duration-700 ease-out"
                 style={{ width: `${c.progress}%` }}
               />
             </div>
-            <button
-              type="button"
-              onClick={() => onContinue?.(c)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 hover:text-purple-700 transition-colors"
-            >
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 group-hover:text-purple-700 group-hover:gap-2.5 transition-all">
               Continue
               <FiArrowRight className="w-3 h-3" />
-            </button>
-          </div>
+            </span>
+          </button>
         ))}
       </div>
     </div>

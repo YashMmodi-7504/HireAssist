@@ -7,7 +7,7 @@ const statusStyle = {
   later: "text-gray-700 bg-gray-50 border-gray-200",
 };
 
-const UpcomingDeadlines = ({ items = [] }) => {
+const UpcomingDeadlines = ({ items = [], onItemClick }) => {
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 h-full">
       <div className="flex items-center justify-between mb-5">
@@ -23,9 +23,11 @@ const UpcomingDeadlines = ({ items = [] }) => {
           <p className="text-sm text-gray-500 text-center py-6">No upcoming deadlines</p>
         )}
         {items.map((item) => (
-          <div
+          <button
+            type="button"
             key={item.id}
-            className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
+            onClick={() => onItemClick?.(item)}
+            className="w-full text-left py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 hover:bg-purple-50/40 -mx-2 px-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300"
           >
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
@@ -38,7 +40,7 @@ const UpcomingDeadlines = ({ items = [] }) => {
             >
               {item.due}
             </span>
-          </div>
+          </button>
         ))}
       </div>
     </div>

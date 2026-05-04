@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { FiUser, FiCpu } from "react-icons/fi";
+import { FiUser, FiCpu, FiCopy, FiCheck, FiRefreshCw } from "react-icons/fi";
 
 // ─── Keyword highlighting ────────────────────────────────────────────────
 // Multi-word entries come BEFORE single-word components so the regex
@@ -114,10 +114,56 @@ const heading = (Tag) =>
     return <Tag>{highlight(children)}</Tag>;
   };
 
+// Recursively flattens markdown children into raw text — needed because
+// react-markdown's <pre> children is a <code> element whose children may
+// be a mix of strings and inline syntax-token spans.
+const extractText = (node) => {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (React.isValidElement(node)) return extractText(node.props.children);
+  return "";
+};
+
+const CodeBlock = ({ children }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(extractText(children));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+  return (
+    <div className="relative group/code my-3">
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/15 backdrop-blur-sm opacity-0 group-hover/code:opacity-100 transition-opacity"
+      >
+        {copied ? (
+          <>
+            <FiCheck className="w-3 h-3 text-emerald-300" />
+            Copied
+          </>
+        ) : (
+          <>
+            <FiCopy className="w-3 h-3" />
+            Copy code
+          </>
+        )}
+      </button>
+      <pre>{children}</pre>
+    </div>
+  );
+};
+
 // ─── react-markdown component overrides ──────────────────────────────────
 // CSS in `.markdown-body` (index.css) handles base typography. These
 // overrides only do things CSS can't: keyword highlighting, callouts,
-// safe external-link attrs.
+// code-block copy chip, safe external-link attrs.
 const markdownComponents = {
   h1: heading("h1"),
   h2: heading("h2"),
@@ -132,6 +178,7 @@ const markdownComponents = {
       {highlight(children)}
     </a>
   ),
+  pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
 };
 
 // ─── Component ───────────────────────────────────────────────────────────
@@ -140,13 +187,26 @@ const formatTime = (date) =>
     ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : "";
 
-const ChatMessage = ({ message }) => {
+const ChatMessage = ({ message, streaming = false, onRegenerate }) => {
   const { role, content, ts, isError } = message;
   const mine = role === "user";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content || "");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    } catch {
+      /* clipboard unavailable — silent no-op */
+    }
+  };
+
+  const showActions = !mine && !isError && !streaming && content;
 
   return (
     <div
-      className={`chat-bubble-in flex items-end gap-3 ${
+      className={`chat-bubble-in group flex items-start gap-3 ${
         mine ? "flex-row-reverse" : ""
       }`}
     >
@@ -163,43 +223,98 @@ const ChatMessage = ({ message }) => {
         {mine ? <FiUser className="w-4 h-4" /> : <FiCpu className="w-4 h-4" />}
       </div>
 
-      {/* Bubble */}
+      {/* Bubble + below-bubble action row (stacked) */}
       <div
-        className={`max-w-[70%] md:max-w-[72ch] rounded-2xl shadow-sm ${
-          mine
-            ? "bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-br-sm px-5 py-3"
-            : isError
-            ? "bg-red-50 border border-red-200 text-red-900 rounded-bl-sm px-5 py-3"
-            : "bg-white border border-gray-200/80 text-gray-800 rounded-bl-sm px-6 py-4"
-        }`}
+        className={`flex flex-col ${
+          mine ? "items-end" : "items-start"
+        } max-w-[70%] md:max-w-[72ch] min-w-0`}
       >
-        {mine || isError ? (
-          <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-            {content}
-          </div>
-        ) : (
-          <div className="markdown-body break-words">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={markdownComponents}
-            >
+        <div
+          className={`relative w-full rounded-2xl ${
+            mine
+              ? "bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-br-sm px-5 py-3 shadow-md shadow-purple-500/15"
+              : isError
+              ? "bg-red-50 text-red-900 rounded-bl-sm px-5 py-3 border-l-[3px] border-red-300"
+              : "bg-white text-gray-800 rounded-bl-sm px-6 py-4 shadow-sm shadow-gray-200/70 border-l-[3px] border-purple-300"
+          }`}
+        >
+          {!mine && !isError && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-full mb-2.5">
+              <FiCpu className="w-2.5 h-2.5" />
+              AI Tutor
+            </span>
+          )}
+          {mine || isError ? (
+            <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
               {content}
-            </ReactMarkdown>
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="markdown-body break-words">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {content || ""}
+              </ReactMarkdown>
+              {streaming && (
+                <span
+                  aria-hidden="true"
+                  className="inline-block w-[7px] h-[15px] -mb-0.5 ml-0.5 bg-purple-500 rounded-sm animate-pulse"
+                />
+              )}
+            </div>
+          )}
 
-        {ts && (
-          <p
-            className={`text-[10px] mt-2 ${
-              mine ? "text-white/70" : isError ? "text-red-500" : "text-gray-400"
-            }`}
-          >
-            {formatTime(ts)}
-          </p>
-        )}
+          {/* Copy button — top-right, fades in on bubble hover */}
+          {showActions && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              title={copied ? "Copied" : "Copy"}
+              aria-label={copied ? "Copied" : "Copy message"}
+              className="absolute top-2.5 right-2.5 inline-flex items-center justify-center w-7 h-7 rounded-md bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-white opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+            >
+              {copied ? (
+                <FiCheck className="w-3.5 h-3.5 text-emerald-600" />
+              ) : (
+                <FiCopy className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Below-bubble row: timestamp + labeled regenerate */}
+        <div
+          className={`flex items-center gap-3 mt-1.5 px-1 ${
+            mine ? "flex-row-reverse" : ""
+          }`}
+        >
+          {ts && (
+            <p
+              className={`text-[10px] ${
+                isError ? "text-red-500" : "text-gray-400"
+              }`}
+            >
+              {formatTime(ts)}
+            </p>
+          )}
+          {showActions && onRegenerate && (
+            <button
+              type="button"
+              onClick={onRegenerate}
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 hover:text-purple-700 transition-colors"
+            >
+              <FiRefreshCw className="w-3 h-3" />
+              Regenerate response
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-export default ChatMessage;
+// Memoized so streaming reveal (which swaps the active bubble's `message`
+// reference every ~18ms) doesn't force every prior bubble to re-render.
+// Older messages keep stable references and skip the work entirely.
+export default React.memo(ChatMessage);

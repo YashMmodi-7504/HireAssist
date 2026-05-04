@@ -29,6 +29,23 @@
   animation: fadeIn 240ms ease-out both;
 }
 
+/* Subtle living-glow halo on the AI persona icon. */
+@keyframes brandGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 18px rgba(124, 92, 255, 0.32),
+      0 0 0 0 rgba(124, 92, 255, 0.28);
+  }
+  50% {
+    box-shadow:
+      0 0 28px rgba(124, 92, 255, 0.55),
+      0 0 0 6px rgba(124, 92, 255, 0.10);
+  }
+}
+.brand-glow {
+  animation: brandGlow 2.4s ease-in-out infinite;
+}
+
 /* Markdown-rendered AI messages: tighter, professional defaults that
    override prose-like browser styles without pulling in @tailwindcss/typography. */
 .markdown-body {
