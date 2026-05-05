@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(head -n 264 d:/Projects/HirerAssist/client/src/pages/student/StudentDashboard.jsx)",
+      "Bash(mv d:/Projects/HirerAssist/client/src/pages/student/StudentDashboard.jsx.tmp d:/Projects/HirerAssist/client/src/pages/student/StudentDashboard.jsx)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(npm install *)",
+      "Bash(curl -s http://localhost:3001/api/health)",
+      "Bash(curl -sv http://localhost:3001/api/health)",
+      "Bash(curl -sX POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"trainer@gmail.com\",\"password\":\"1234\"}')",
+      "Bash(curl -sX POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"trainer@gmail.com\",\"password\":\"wrong\"}')",
+      "Bash(curl -sX POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"director@gmail.com\",\"password\":\"1234\"}')",
+      "Read(//tmp/**)",
+      "Bash(node -e ' *)",
+      "Bash(node --input-type=module -e ' *)"
+    ]
+  }
+}
