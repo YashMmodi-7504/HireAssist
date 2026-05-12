@@ -12,10 +12,12 @@ import RecentActivity from "../../components/Assessment/RecentActivity";
 import AISuggestions from "../../components/Assessment/AISuggestions";
 import PerformanceInsights from "../../components/Assessment/PerformanceInsights";
 
-// Live test-engine components
-import TestSetup from "../../components/assessment/TestSetup";
-import TestRunner from "../../components/assessment/TestRunner";
-import ResultPage from "../../components/assessment/ResultPage";
+// Live test-engine components — folder is "Assessment" (capital A).
+// Windows is case-insensitive so lowercase paths used to "work" locally
+// but failed on Netlify's Linux build with case-sensitive filesystem.
+import TestSetup from "../../components/Assessment/TestSetup";
+import TestRunner from "../../components/Assessment/TestRunner";
+import ResultPage from "../../components/Assessment/ResultPage";
 import { saveResult } from "../../services/assessmentStore";
 
 // Map dashboard card subject names to the bank's subject ids. Cards whose
