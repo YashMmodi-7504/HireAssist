@@ -11,6 +11,8 @@ import SkillDistribution from "../../components/dashboard/SkillDistribution";
 import UpcomingDeadlines from "../../components/dashboard/UpcomingDeadlines";
 import PlacementTracker from "../../components/dashboard/PlacementTracker";
 import StreakIndicator from "../../components/dashboard/StreakIndicator";
+import NextBestAction from "../../components/dashboard/NextBestAction";
+import AiInsightPanel from "../../components/dashboard/AiInsightPanel";
 import Modal from "../../components/ui/Modal";
 
 class ErrorBoundary extends React.Component {
@@ -168,6 +170,16 @@ const StudentDashboard = () => {
     if (route) navigate(route);
   };
 
+  // Anywhere on the dashboard that wants to consult the AI tutor calls this
+  // — single helper keeps every cross-page link consistent.
+  const askAI = (prompt) => {
+    navigate("/student/ai", { state: { prompt } });
+  };
+
+  const handleSkillClick = (skill) => {
+    askAI(`Help me improve at ${skill.name}. Explain the core concepts and quiz me to find weak spots.`);
+  };
+
   const handleContinueCourse = () => {
     // Per-course detail route doesn't exist for students yet, so the card
     // sends them to study material as the closest existing surface.
@@ -200,6 +212,16 @@ const StudentDashboard = () => {
             />
           </section>
 
+          {/* Next Best Action — AI-derived top recommendation */}
+          <section className="col-span-12">
+            <NextBestAction
+              deadlines={deadlines}
+              skills={skills}
+              streak={user.streak}
+              onAskAI={askAI}
+            />
+          </section>
+
           {/* Key Metrics */}
           <section className="col-span-12">
             <KeyMetricsGrid metrics={metrics} onCardClick={handleMetricClick} />
@@ -224,7 +246,17 @@ const StudentDashboard = () => {
             <WeeklyActivityChart data={weeklyActivity} />
           </section>
           <section className="col-span-12 lg:col-span-4">
-            <SkillDistribution skills={skills} />
+            <SkillDistribution skills={skills} onSkillClick={handleSkillClick} />
+          </section>
+
+          {/* AI Insights strip */}
+          <section className="col-span-12">
+            <AiInsightPanel
+              skills={skills}
+              streak={user.streak}
+              longestStreak={user.longestStreak}
+              onAskAI={askAI}
+            />
           </section>
 
           {/* Insights row */}
@@ -322,16 +354,31 @@ const StudentDashboard = () => {
           title={activeApplication?.company}
           subtitle="Application status"
           footer={
-            <button
-              type="button"
-              onClick={() => {
-                setActiveApplication(null);
-                navigate("/student/jobs");
-              }}
-              className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg shadow-sm transition-all"
-            >
-              View all jobs
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  const company = activeApplication?.company;
+                  setActiveApplication(null);
+                  if (company) {
+                    askAI(`Help me prepare for an interview at ${company}. Walk me through likely rounds and ask me one mock question to start.`);
+                  }
+                }}
+                className="px-4 py-2 text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-100 rounded-lg transition-colors"
+              >
+                Ask AI for prep
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveApplication(null);
+                  navigate("/student/jobs");
+                }}
+                className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg shadow-sm transition-all"
+              >
+                View all jobs
+              </button>
+            </>
           }
         >
           {activeApplication && (() => {

@@ -69,7 +69,7 @@ const trendChip = (delta) => {
   return { Icon: FiMinus, label: "0", classes: "text-gray-600 bg-gray-50" };
 };
 
-const SkillDistribution = ({ skills = [] }) => {
+const SkillDistribution = ({ skills = [], onSkillClick }) => {
   // Bars start at 0 and animate to their target value on mount.
   // Triggered via `mounted` flag so the CSS width transition runs.
   const [mounted, setMounted] = useState(false);
@@ -78,11 +78,20 @@ const SkillDistribution = ({ skills = [] }) => {
     return () => cancelAnimationFrame(t);
   }, []);
 
+  const interactive = typeof onSkillClick === "function";
+
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 h-full">
-      <div className="mb-5">
-        <h3 className="text-lg font-semibold text-gray-900">Skill Distribution</h3>
-        <p className="text-xs text-gray-500 mt-0.5">Performance by skill area</p>
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Skill Distribution</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Performance by skill area</p>
+        </div>
+        {interactive && (
+          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-full">
+            Click to ask AI
+          </span>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -93,8 +102,18 @@ const SkillDistribution = ({ skills = [] }) => {
           const tier = tierFor(s.value);
           const Icon = s.icon || fallbackIcon(s.name);
           const trend = trendChip(s.delta);
+          const Wrapper = interactive ? "button" : "div";
           return (
-            <div key={s.name}>
+            <Wrapper
+              type={interactive ? "button" : undefined}
+              key={s.name}
+              onClick={interactive ? () => onSkillClick(s) : undefined}
+              className={`block w-full text-left ${
+                interactive
+                  ? "rounded-lg -mx-2 px-2 py-1.5 hover:bg-purple-50/40 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  : ""
+              }`}
+            >
               <div className="flex items-center justify-between mb-1.5 gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span
@@ -124,7 +143,7 @@ const SkillDistribution = ({ skills = [] }) => {
                   style={{ width: `${mounted ? s.value : 0}%` }}
                 />
               </div>
-            </div>
+            </Wrapper>
           );
         })}
       </div>

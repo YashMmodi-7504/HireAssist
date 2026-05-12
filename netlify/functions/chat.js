@@ -46,11 +46,15 @@ export async function handler(event) {
     return json(405, { error: "Method Not Allowed" });
   }
 
-  const apiKey = process.env.HIREASSIST_GROQ_KEY;
-
+  // Accept either env var name — older Netlify setups have GROQ_API_KEY,
+  // newer ones use the namespaced HIREASSIST_GROQ_KEY. Whichever is set
+  // wins (HIREASSIST_GROQ_KEY takes precedence when both exist).
+  const apiKey = process.env.HIREASSIST_GROQ_KEY || process.env.GROQ_API_KEY;
   if (!apiKey) {
-    logError("Missing API key");
-    return json(500, { error: "Missing API key" });
+    logError("No Groq API key found — set HIREASSIST_GROQ_KEY (or GROQ_API_KEY) in Netlify env vars.");
+    return json(500, {
+      error: "Server missing Groq API key. Set HIREASSIST_GROQ_KEY or GROQ_API_KEY in Netlify env vars.",
+    });
   }
 
   let body;

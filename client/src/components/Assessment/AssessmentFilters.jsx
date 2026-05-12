@@ -55,7 +55,7 @@ const AssessmentFilters = ({
           >
             <option value="all">All Levels</option>
             <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
+            <option value="medium">Intermediate</option>
             <option value="hard">Hard</option>
           </select>
 

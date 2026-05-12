@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   FiSend,
   FiCpu,
@@ -81,6 +82,8 @@ const saveChats = (chats) => {
 // ─── Component ───────────────────────────────────────────────────────────
 const AIChat = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const studentName = user?.name?.split(" ")[0] || "there";
 
   const [chats, setChats] = useState(() => loadChats() || [newChat(studentName)]);
@@ -92,6 +95,13 @@ const AIChat = () => {
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
   const streamTimerRef = useRef(null);
+  // Synchronous re-entry guard — `loading` state is async, so two clicks
+  // in the same tick both pass an `if (loading) return` check before the
+  // setLoading propagates. A ref flips synchronously and blocks the second.
+  const inFlightRef = useRef(false);
+  // One-shot guard for the router-state auto-fire. Strict Mode invokes the
+  // mount effect twice in dev — without this the same prompt sends twice.
+  const autoFiredRef = useRef(false);
 
   const activeChat = useMemo(
     () => chats.find((c) => c.id === activeId) || chats[0],
@@ -153,6 +163,7 @@ const AIChat = () => {
       clearInterval(streamTimerRef.current);
       streamTimerRef.current = null;
     }
+    inFlightRef.current = false;
     const fresh = newChat(studentName);
     setChats((prev) => [fresh, ...prev].slice(0, MAX_CHATS));
     setActiveId(fresh.id);
@@ -167,6 +178,7 @@ const AIChat = () => {
       clearInterval(streamTimerRef.current);
       streamTimerRef.current = null;
     }
+    inFlightRef.current = false;
     setActiveId(id);
     setError(null);
     setLoading(false);
@@ -190,13 +202,23 @@ const AIChat = () => {
       clearInterval(streamTimerRef.current);
       streamTimerRef.current = null;
     }
+    inFlightRef.current = false;
     updateActiveMessages([greeting(studentName)]);
     setError(null);
     setLoading(false);
   };
 
   // ─── Streaming reveal ──────────────────────────────────────────────────
+  // Each call owns its own interval ID via closure. Before starting a new
+  // stream we cancel any prior one explicitly, so a fast follow-up request
+  // can't leave the previous interval running as a zombie that keeps
+  // pushing updates after the user has moved on.
   const streamAssistantReply = (full) => {
+    if (streamTimerRef.current) {
+      clearInterval(streamTimerRef.current);
+      streamTimerRef.current = null;
+    }
+
     const messageId = newId();
     updateActiveMessages((prev) => [
       ...prev,
@@ -210,7 +232,7 @@ const AIChat = () => {
     ]);
 
     let cursor = 0;
-    streamTimerRef.current = setInterval(() => {
+    const intervalId = setInterval(() => {
       cursor = Math.min(cursor + STREAM_CHARS_PER_TICK, full.length);
       const isDone = cursor >= full.length;
       updateActiveMessages((prev) =>
@@ -221,15 +243,24 @@ const AIChat = () => {
         )
       );
       if (isDone) {
-        clearInterval(streamTimerRef.current);
-        streamTimerRef.current = null;
+        clearInterval(intervalId);
+        // Only clear the ref if we still own it — a newer stream may have
+        // already replaced it.
+        if (streamTimerRef.current === intervalId) {
+          streamTimerRef.current = null;
+        }
       }
     }, STREAM_TICK_MS);
+    streamTimerRef.current = intervalId;
   };
 
   // ─── Send / regenerate ─────────────────────────────────────────────────
+  // Uses inFlightRef (synchronous) instead of `loading` state because
+  // setState updates are batched and async — two clicks in the same tick
+  // both pass an `if (loading) return` check before setLoading propagates.
   const sendUserMessage = async (text) => {
-    if (!text || loading) return;
+    if (!text || inFlightRef.current) return;
+    inFlightRef.current = true;
     setError(null);
     updateActiveMessages((prev) => [
       ...prev,
@@ -237,25 +268,27 @@ const AIChat = () => {
     ]);
     setLoading(true);
 
-    const reply = await sendMessage(text);
-    setLoading(false);
-
-    if (isFallbackReply(reply)) {
-      setError("AI service is currently unreachable. See browser console for details.");
-      updateActiveMessages((prev) => [
-        ...prev,
-        {
-          id: newId(),
-          role: "assistant",
-          content: reply,
-          ts: Date.now(),
-          isError: true,
-        },
-      ]);
-      return;
+    try {
+      const reply = await sendMessage(text);
+      if (isFallbackReply(reply)) {
+        setError("AI service is currently unreachable. See browser console for details.");
+        updateActiveMessages((prev) => [
+          ...prev,
+          {
+            id: newId(),
+            role: "assistant",
+            content: reply,
+            ts: Date.now(),
+            isError: true,
+          },
+        ]);
+        return;
+      }
+      streamAssistantReply(reply);
+    } finally {
+      setLoading(false);
+      inFlightRef.current = false;
     }
-
-    streamAssistantReply(reply);
   };
 
   const handleSubmit = (overrideText) => {
@@ -266,36 +299,40 @@ const AIChat = () => {
   };
 
   const handleRegenerate = async () => {
-    if (loading) return;
+    if (inFlightRef.current) return;
     // Find the last user message — that's what we'll resend.
     const lastUserIdx = [...messages].reverse().findIndex((m) => m.role === "user");
     if (lastUserIdx === -1) return;
     const realIdx = messages.length - 1 - lastUserIdx;
     const lastUser = messages[realIdx];
 
+    inFlightRef.current = true;
     // Drop everything after that user message so the new reply replaces the old.
     updateActiveMessages((prev) => prev.slice(0, realIdx + 1));
     setError(null);
     setLoading(true);
 
-    const reply = await sendMessage(lastUser.content);
-    setLoading(false);
-
-    if (isFallbackReply(reply)) {
-      setError("AI service is currently unreachable.");
-      updateActiveMessages((prev) => [
-        ...prev,
-        {
-          id: newId(),
-          role: "assistant",
-          content: reply,
-          ts: Date.now(),
-          isError: true,
-        },
-      ]);
-      return;
+    try {
+      const reply = await sendMessage(lastUser.content);
+      if (isFallbackReply(reply)) {
+        setError("AI service is currently unreachable.");
+        updateActiveMessages((prev) => [
+          ...prev,
+          {
+            id: newId(),
+            role: "assistant",
+            content: reply,
+            ts: Date.now(),
+            isError: true,
+          },
+        ]);
+        return;
+      }
+      streamAssistantReply(reply);
+    } finally {
+      setLoading(false);
+      inFlightRef.current = false;
     }
-    streamAssistantReply(reply);
   };
 
   const handleKeyDown = (e) => {
@@ -304,6 +341,23 @@ const AIChat = () => {
       handleSubmit();
     }
   };
+
+  // Auto-fire a prompt passed via router state (e.g. dashboard "Ask AI").
+  // Three guards needed:
+  //   1. autoFiredRef — Strict Mode runs the mount effect twice in dev;
+  //      this ref ensures we only fire once per component lifetime.
+  //   2. inFlightRef inside sendUserMessage — covers any other re-entry.
+  //   3. Clear the router state immediately so back/forward nav can't refire.
+  useEffect(() => {
+    if (autoFiredRef.current) return;
+    const pending = location.state?.prompt;
+    if (!pending) return;
+    autoFiredRef.current = true;
+    navigate(location.pathname, { replace: true, state: null });
+    // Defer one tick so the navigate() state-clear settles first.
+    setTimeout(() => sendUserMessage(pending), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const lastAssistantIdx = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { FiPlay } from "react-icons/fi";
 
 import AssessmentCard from "../../components/Assessment/AssessmentCard";
 import SubjectSection from "../../components/Assessment/SubjectSection";
@@ -10,6 +11,26 @@ import RecommendedTests from "../../components/Assessment/RecommendedTests";
 import RecentActivity from "../../components/Assessment/RecentActivity";
 import AISuggestions from "../../components/Assessment/AISuggestions";
 import PerformanceInsights from "../../components/Assessment/PerformanceInsights";
+
+// Live test-engine components
+import TestSetup from "../../components/assessment/TestSetup";
+import TestRunner from "../../components/assessment/TestRunner";
+import ResultPage from "../../components/assessment/ResultPage";
+import { saveResult } from "../../services/assessmentStore";
+
+// Map dashboard card subject names to the bank's subject ids. Cards whose
+// subject isn't mapped here can't launch a real test yet (no questions).
+const SUBJECT_NAME_TO_ID = {
+  Python: "python",
+  "Web Development": "web-dev",
+  DSA: "dsa",
+};
+// Map card difficulties to bank levels.
+const DIFFICULTY_TO_LEVEL = {
+  easy: "easy",
+  medium: "intermediate",
+  hard: "hard",
+};
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -236,9 +257,65 @@ const AssessmentPage = () => {
     };
   }, [recommended, weakAreas]);
 
+  // ─── Test-engine state machine ─────────────────────────────────────────
+  // engineStage: "idle" | "setup" | "running" | "result"
+  const [engineStage, setEngineStage] = useState("idle");
+  const [engineConfig, setEngineConfig] = useState(null);
+  const [engineResult, setEngineResult] = useState(null);
+
+  const launchSetup = (subjectId = null, defaultLevel = null, lockedSubject = false) => {
+    setEngineConfig({ subjectId, defaultLevel, lockedSubject });
+    setEngineStage("setup");
+  };
+
+  const handleStartTest = (cfg) => {
+    setEngineConfig(cfg);
+    setEngineStage("running");
+  };
+
+  const handleSubmitTest = (result) => {
+    setEngineResult(result);
+    setEngineStage("result");
+    // Persist a sanitized copy (omit the question objects to keep storage
+    // small; ids + answers are enough to reconstruct a review later).
+    saveResult({
+      id: `r-${Date.now()}`,
+      subjectId: result.subjectId,
+      subjectName: result.subjectName,
+      subtopic: result.subtopic,
+      level: result.level,
+      score: result.score,
+      total: result.total,
+      percentage: result.percentage,
+      answers: result.answers,
+      questionIds: result.questionIds,
+      durationMs: result.durationMs,
+      completedAt: result.completedAt,
+    });
+  };
+
+  const handleEngineHome = () => {
+    setEngineStage("idle");
+    setEngineConfig(null);
+    setEngineResult(null);
+  };
+
+  const handleRetake = () => {
+    if (!engineResult) return handleEngineHome();
+    launchSetup(engineResult.subjectId, engineResult.level);
+  };
+
   const handleAction = (a) => {
-    // Hook this up to test interface / result viewer when those routes exist.
-    console.log("[assessment] action ->", a.status, a.title);
+    const subjectId = SUBJECT_NAME_TO_ID[a.subject];
+    if (!subjectId) {
+      // Subject doesn't have a question bank yet — fall back to a free
+      // setup so the user can still pick a subject they CAN test.
+      launchSetup(null, DIFFICULTY_TO_LEVEL[a.difficulty] || "easy", false);
+      return;
+    }
+    // Subject isolation: clicking a specific card commits the user to that
+    // subject — they can still tweak subtopic and difficulty.
+    launchSetup(subjectId, DIFFICULTY_TO_LEVEL[a.difficulty] || "easy", true);
   };
 
   const handleReset = () => {
@@ -247,6 +324,39 @@ const AssessmentPage = () => {
     setSelectedDifficulty("all");
     setSelectedStatus("all");
   };
+
+  // When the engine is active, take over the page entirely.
+  if (engineStage !== "idle") {
+    return (
+      <ErrorBoundary>
+        <div className="w-full bg-slate-50 min-h-full px-6 lg:px-8 py-8">
+          {engineStage === "setup" && (
+            <TestSetup
+              subjectId={engineConfig?.subjectId}
+              defaultLevel={engineConfig?.defaultLevel}
+              lockedSubject={!!engineConfig?.lockedSubject}
+              onStart={handleStartTest}
+              onCancel={handleEngineHome}
+            />
+          )}
+          {engineStage === "running" && engineConfig?.questions && (
+            <TestRunner
+              config={engineConfig}
+              onSubmit={handleSubmitTest}
+              onCancel={handleEngineHome}
+            />
+          )}
+          {engineStage === "result" && engineResult && (
+            <ResultPage
+              result={engineResult}
+              onRetake={handleRetake}
+              onHome={handleEngineHome}
+            />
+          )}
+        </div>
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -259,6 +369,14 @@ const AssessmentPage = () => {
               <p className="text-sm text-gray-600 mt-1">
                 Track your performance across subjects
               </p>
+              <button
+                type="button"
+                onClick={() => launchSetup()}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-sm font-semibold rounded-lg shadow-sm hover:shadow-[0_8px_24px_-6px_rgba(124,58,237,0.45)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+              >
+                <FiPlay className="w-4 h-4" />
+                Take a new test
+              </button>
             </div>
 
             <div className="flex items-center gap-6">

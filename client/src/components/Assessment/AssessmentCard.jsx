@@ -23,12 +23,15 @@ const statusStyle = {
   "not-started": { label: "Not Started", className: "text-gray-600 bg-gray-100" },
 };
 
+// All CTAs share the same purple→indigo brand gradient — no more black
+// "View Result" button. Completed cards now offer a clear "Retake test"
+// path so the engine can be re-launched without leaving the dashboard.
 const ctaStyle = {
   completed: {
-    label: "View Result",
-    icon: FiArrowRight,
+    label: "Retake test",
+    icon: FiRotateCcw,
     className:
-      "text-white bg-gray-900 hover:bg-gray-800 active:bg-gray-700 border border-transparent",
+      "text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 border border-transparent shadow-sm hover:shadow-[0_8px_24px_-6px_rgba(124,58,237,0.45)]",
   },
   "in-progress": {
     label: "Resume",
@@ -37,11 +40,20 @@ const ctaStyle = {
       "text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 border border-transparent shadow-sm hover:shadow-[0_8px_24px_-6px_rgba(59,130,246,0.45)]",
   },
   "not-started": {
-    label: "Start Test",
+    label: "Start test",
     icon: FiArrowRight,
     className:
       "text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 border border-transparent shadow-sm hover:shadow-[0_8px_24px_-6px_rgba(124,58,237,0.45)]",
   },
+};
+
+// User-facing difficulty labels. Data still uses "easy"/"medium"/"hard"
+// internally (for filter values + bank keys) but the rendered text is the
+// friendlier set.
+const DIFFICULTY_LABEL = {
+  easy: "Easy",
+  medium: "Intermediate",
+  hard: "Hard",
 };
 
 const tagStyle = {
@@ -96,7 +108,7 @@ const AssessmentCard = ({ assessment, onAction, accentColor = "purple" }) => {
         <span
           className={`text-[11px] font-semibold px-2 py-0.5 rounded uppercase tracking-wide border ${diff}`}
         >
-          {a.difficulty || "—"}
+          {DIFFICULTY_LABEL[a.difficulty] || "—"}
         </span>
         <span
           className={`text-[11px] font-semibold px-2 py-0.5 rounded ${status.className}`}
