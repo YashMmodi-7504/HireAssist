@@ -75,6 +75,72 @@ GLOBAL RULES:
 const FALLBACK_REPLY =
   "AI service temporarily unavailable. Please try again.";
 
+// ─── Mentor-response formatter ───────────────────────────────────────────
+// The Netlify function returns a structured JSON object:
+//   { title, explanation, example, realWorld, practiceQuestions[], nextActions[] }
+// We turn it into a markdown string so the existing ReactMarkdown renderer
+// + callout banners (## Example → 🧠, ## Real-world Use → 🌍) light up
+// without any new components.
+const formatMentorResponse = (data) => {
+  if (!data || typeof data !== "object") return "";
+  const parts = [];
+
+  if (data.title) parts.push(`## ${data.title}`);
+  if (data.explanation) parts.push(String(data.explanation).trim());
+
+  if (data.example && String(data.example).trim()) {
+    parts.push("## Example");
+    parts.push(String(data.example).trim());
+  }
+
+  if (data.realWorld && String(data.realWorld).trim()) {
+    parts.push("## Real-world Use");
+    parts.push(String(data.realWorld).trim());
+  }
+
+  if (Array.isArray(data.practiceQuestions) && data.practiceQuestions.length > 0) {
+    parts.push("## Practice Questions");
+    parts.push(
+      data.practiceQuestions
+        .filter((q) => q != null && String(q).trim() !== "")
+        .map((q, i) => `${i + 1}. ${String(q).trim()}`)
+        .join("\n")
+    );
+  }
+
+  return parts.join("\n\n").trim();
+};
+
+// Try parsing a string that should contain JSON. Handles plain JSON,
+// code-fenced JSON (```json ... ```), and stray prose around the object.
+const tryParseJsonLoose = (text) => {
+  if (typeof text !== "string") return null;
+  const direct = text.trim();
+  try {
+    return JSON.parse(direct);
+  } catch {
+    /* fall through */
+  }
+  const fenced = direct.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+  if (fenced) {
+    try {
+      return JSON.parse(fenced[1]);
+    } catch {
+      /* fall through */
+    }
+  }
+  const first = direct.indexOf("{");
+  const last = direct.lastIndexOf("}");
+  if (first >= 0 && last > first) {
+    try {
+      return JSON.parse(direct.slice(first, last + 1));
+    } catch {
+      /* fall through */
+    }
+  }
+  return null;
+};
+
 const isProd = import.meta.env.PROD === true;
 const devKey = import.meta.env.VITE_GROQ_API_KEY || "";
 const useDirect = !isProd && devKey.length > 0;
@@ -108,6 +174,16 @@ const callGroqDirect = async (message) => {
   }
   const reply = data?.choices?.[0]?.message?.content?.trim();
   if (!reply) throw new Error("Groq returned an empty response");
+
+  // If the model emitted a mentor-shaped JSON object (matches what the
+  // Netlify function asks for), format it the same way the prod path does.
+  // Otherwise fall back to the raw text — keeps backwards compat with the
+  // older plain-text prompt that some dev setups still use.
+  const maybeJson = tryParseJsonLoose(reply);
+  if (maybeJson && (maybeJson.title || maybeJson.explanation)) {
+    const formatted = formatMentorResponse(maybeJson);
+    if (formatted) return formatted;
+  }
   return reply;
 };
 
@@ -135,8 +211,20 @@ const callNetlifyFunction = async (message) => {
   if (!res.ok) {
     throw new Error(data?.error || `Function returned ${res.status}`);
   }
-  if (!data.reply) throw new Error("Empty reply from function");
-  return data.reply;
+
+  // New structured mentor shape from the upgraded Netlify function.
+  // Detect by the presence of `title` or `explanation`.
+  if (data && typeof data === "object" && (data.title || data.explanation)) {
+    const formatted = formatMentorResponse(data);
+    if (formatted) return formatted;
+  }
+
+  // Legacy shape: { reply: "..." } — kept so older deploys keep working.
+  if (typeof data.reply === "string" && data.reply.trim()) {
+    return data.reply;
+  }
+
+  throw new Error("Empty or malformed reply from function");
 };
 
 /**
